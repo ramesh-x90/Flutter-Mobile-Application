@@ -3,12 +3,12 @@ import 'package:hello_world/NetWorking/Comm.dart';
 import 'package:hello_world/Protocol/Protocol.dart';
 import '../NavDrawer.dart';
 
-class Chat extends StatefulWidget {
+class ChatModel extends StatefulWidget {
   @override
-  _ChatState createState() => _ChatState();
+  _ChatModelState createState() => _ChatModelState();
 }
 
-class _ChatState extends State<Chat> {
+class _ChatModelState extends State<ChatModel> {
   GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
   @override
   Widget build(BuildContext context) {
@@ -18,10 +18,11 @@ class _ChatState extends State<Chat> {
         backgroundColor: Colors.blueAccent,
         leading: IconButton(
             onPressed: () {
-              _scaffoldKey.currentState?.openDrawer();
+              // _scaffoldKey.currentState?.openDrawer();
+              Navigator.pop(context);
             },
             icon: Icon(Icons.menu)),
-        title: Text('Chat'),
+        title: Text('demo group'),
         elevation: 20,
         actions: [
           PopupMenuButton(
@@ -159,7 +160,7 @@ class _ChatwindowState extends State<Chatwindow> {
             index, WrapAlignment.start, Colors.blueAccent.withOpacity(0.65));
   }
 
-//lightBlue.shade100 blueGrey.shade200
+//chat buble
   Widget chatchip(int index, WrapAlignment alignment, Color color) {
     return Wrap(
       alignment: alignment,
@@ -181,25 +182,25 @@ class _ChatwindowState extends State<Chatwindow> {
             ),
             width: MediaQuery.of(context).size.width * 0.6,
             child: Padding(
-              padding: const EdgeInsets.all(10),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    Chats.getchats()[index].getsender(),
-                    style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w600),
-                  ),
-                  Text(
-                    Chats.getchats()[index].getdate(),
-                    style: TextStyle(
-                        fontSize: 14,
-                        color: Colors.black,
-                        fontWeight: FontWeight.w400),
-                  ),
-                ],
+              padding: const EdgeInsets.all(1),
+              child: ListTile(
+                leading: Icon(Icons.person),
+                title: Text(
+                  Chats.getchats()[index].getsender(),
+                  style: TextStyle(
+                      fontSize: 16,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w600),
+                ),
+                subtitle: Text(
+                  Chats.getchats()[index].getdate(),
+                  style: TextStyle(
+                      fontSize: 14,
+                      color: Colors.black,
+                      fontWeight: FontWeight.w400),
+                ),
+                // trailing: Icon(Icons.menu),
+                onLongPress: () => {},
               ),
             ),
           ),

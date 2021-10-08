@@ -9,8 +9,11 @@ class BottomNav extends StatelessWidget {
       color: Colors.blueAccent,
       backgroundColor: Colors.white,
       items: <Widget>[
-        Icon(Icons.add),
-        Icon(Icons.menu),
+        Icon(Icons.account_balance),
+        Icon(Icons.person),
+        FloatingActionButton(
+          onPressed: () => {},
+        )
       ],
     );
   }

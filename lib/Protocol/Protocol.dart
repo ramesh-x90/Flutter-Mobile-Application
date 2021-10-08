@@ -1,4 +1,4 @@
-import 'package:hello_world/Ui/Fragments/Chat.dart';
+import 'package:hello_world/Ui/Fragments/ChatModel.dart';
 
 class Protocol {
   /*

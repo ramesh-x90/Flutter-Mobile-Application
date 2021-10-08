@@ -30,7 +30,8 @@ class MyApp extends StatelessWidget {
         '/DashBoard': (context) => DashBoard(),
         '/chat': (context) => Chat(),
       },
-      home: WelcomePage(),
+      // home: WelcomePage(),
+      home: Chat(),
     );
   }
 }

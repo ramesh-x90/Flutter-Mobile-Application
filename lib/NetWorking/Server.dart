@@ -6,9 +6,8 @@ import 'package:hello_world/Protocol/Protocol.dart';
 import 'Comm.dart';
 
 class Server {
-  static String _host = '192.168.1.14';
+  static String _host = '192.168.1.13';
   static int _port = 65400;
-  static String separator = '*@*!';
   Socket? socket;
   String serverResponse = "null";
   // ignore: non_constant_identifier_names
@@ -73,15 +72,58 @@ class Server {
   // ignore: non_constant_identifier_names
   Future<void> send_logging_data(
       {String name = 'name', String passwd = 'password'}) async {
-    this.send(
-        msg: "logging=${separator}username:$name${separator}passwd:$passwd");
+    this.send(msg: """
+              {
+
+              request: logging
+
+              credential: 
+                  {	
+                    token:
+                    username:$name
+                    password:$passwd
+                  }
+              }
+              """);
   }
 
   String getServerReply() {
     return this.serverResponse;
   }
 
-  void sendmsg(String msg) {
-    this.send(msg: "send=$separator$msg");
+  void sendmsg(
+    String reqType, {
+    String username = '',
+    String toWhom = '',
+    String destType = '',
+    int destID = 0,
+    String title = '',
+    String threadID = '',
+    String textMsg = '',
+  }) {
+    this.send(msg: """
+request:$reqType
+
+sender:$username
+
+where: {
+	type:$destType
+	id:$destID
+	}
+
+subject: {
+	title:$title
+	thread id:$threadID
+	}
+
+towhom:$toWhom
+
+data: {
+	
+	images: 
+	text:$textMsg
+
+	}
+""");
   }
 }

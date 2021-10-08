@@ -22,7 +22,7 @@ class _LoginState extends State<Login> {
     if (_formKey.currentState!.validate()) {
       _email = _emailCon.text;
       _passwd = _passwdCtl.text;
-      print("email: " + _email + " passwd: " + _passwd);
+      print("username: " + _email + " passwd: " + _passwd);
       server?.send_logging_data(name: _email, passwd: _passwd);
 
       //if verified load menu
