@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:hello_world/res/Strings/EnvRes.dart';
 
 class TitleWithMoreButton extends StatelessWidget {
   final Function action;
@@ -24,9 +25,9 @@ class TitleWithMoreButton extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 30, vertical: 5),
             child: Text(
-              "News",
+              this.data,
               style: TextStyle(
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w800,
               ),
             ),
           ),
@@ -39,7 +40,7 @@ class TitleWithMoreButton extends StatelessWidget {
           style: ButtonStyle(),
           child: Text(
             'more',
-            style: TextStyle(color: Colors.grey),
+            style: TextStyle(color: EnvRes.themeColor),
           ),
         ),
         Spacer(

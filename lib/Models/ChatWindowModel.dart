@@ -1,55 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:hello_world/NetWorking/Comm.dart';
+import 'package:hello_world/Classes/Chat.dart';
 import 'package:hello_world/Protocol/Protocol.dart';
-import '../NavDrawer.dart';
-
-class ChatModel extends StatefulWidget {
-  @override
-  _ChatModelState createState() => _ChatModelState();
-}
-
-class _ChatModelState extends State<ChatModel> {
-  GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      key: _scaffoldKey,
-      appBar: AppBar(
-        backgroundColor: Colors.blueAccent,
-        leading: IconButton(
-            onPressed: () {
-              // _scaffoldKey.currentState?.openDrawer();
-              Navigator.pop(context);
-            },
-            icon: Icon(Icons.menu)),
-        title: Text('demo group'),
-        elevation: 20,
-        actions: [
-          PopupMenuButton(
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 1,
-                child: Text("clear chat"),
-              )
-            ],
-            onSelected: (value) {
-              setState(() {
-                //clear chat
-                if (value == 1) {
-                  Chats.clearchat();
-                }
-              });
-            },
-          ),
-        ],
-      ),
-      drawer: DrawerWidget(),
-      body: Chatwindow(),
-    );
-  }
-}
+import 'package:hello_world/Protocol/requests/reqFunctions.dart';
+import 'package:hello_world/StateSave/CurrentAppstate.dart';
+import 'package:hello_world/Tools/ImageDownloader.dart';
+import 'package:hello_world/res/customicons_icons.dart';
 
 class Chatwindow extends StatefulWidget {
+  String _dest;
+  Chatwindow(this._dest);
+
   @override
   _ChatwindowState createState() => _ChatwindowState();
 }
@@ -57,11 +17,11 @@ class Chatwindow extends StatefulWidget {
 class _ChatwindowState extends State<Chatwindow> {
   final TextEditingController msgbar = TextEditingController();
   final listcontroler = ScrollController();
+  List<Chat> list = [];
 
   void incomingmsglistner() {
     // ignore: await_only_futures
     setState(() {});
-    listcontroler.jumpTo(listcontroler.position.maxScrollExtent + 50);
   }
 
   @override
@@ -74,6 +34,9 @@ class _ChatwindowState extends State<Chatwindow> {
   @override
   Widget build(BuildContext context) {
     final Size size = MediaQuery.of(context).size;
+    list = Chat.getchats()
+        .where((element) => element.getdestination() == widget._dest)
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -82,8 +45,9 @@ class _ChatwindowState extends State<Chatwindow> {
         Expanded(
           child: Container(
             child: ListView.builder(
+                reverse: true,
                 controller: listcontroler,
-                itemCount: Chats.getchats().length,
+                itemCount: list.length,
                 itemBuilder: itemBuilder),
           ),
         ),
@@ -123,6 +87,7 @@ class _ChatwindowState extends State<Chatwindow> {
                   ),
                 ),
               ),
+              //send button
               Container(
                 margin: EdgeInsets.only(left: 10.0),
                 decoration: BoxDecoration(
@@ -144,30 +109,37 @@ class _ChatwindowState extends State<Chatwindow> {
   void sendmsg(String msg) {
     setState(() {
       if (msg != '') {
-        Chats('me', msg);
-        listcontroler.jumpTo(listcontroler.position.maxScrollExtent + 50);
+        Chat chat = Chat(CurrentAppState.getCurrentUser(), msg, widget._dest,
+            DateTime.now().toString());
         print(msg);
-        Comm.getServer()!.sendmsg(msg);
+
+        //send msg to server
+        sendMsg(chat);
         msgbar.clear();
       }
     });
   }
 
   Widget itemBuilder(BuildContext context, int index) {
-    return Chats.getchats()[index].getsender() == 'me'
-        ? chatchip(index, WrapAlignment.end, Colors.blueGrey.shade200)
-        : chatchip(
-            index, WrapAlignment.start, Colors.blueAccent.withOpacity(0.65));
+    return Chat.getchats()[index].getsender().getname() ==
+            CurrentAppState.getCurrentUser().getname()
+        ? chatchip(index, WrapAlignment.end, Colors.blueGrey.shade700)
+        : chatchip(index, WrapAlignment.start, Colors.teal.shade900);
   }
 
 //chat buble
   Widget chatchip(int index, WrapAlignment alignment, Color color) {
+    double scrnwidth = MediaQuery.of(context).size.width;
+    double len = scrnwidth * 0.4 * (list[index].getdata().length * 0.05 + 1);
     return Wrap(
       alignment: alignment,
       children: [
         Padding(
+          //box
           padding: const EdgeInsets.all(10),
           child: Container(
+            width: (len < scrnwidth) ? len : scrnwidth * 0.7,
+            //styling
             decoration: BoxDecoration(
               color: color,
               borderRadius: BorderRadius.circular(5),
@@ -180,26 +152,52 @@ class _ChatwindowState extends State<Chatwindow> {
                 ),
               ],
             ),
-            width: MediaQuery.of(context).size.width * 0.6,
             child: Padding(
               padding: const EdgeInsets.all(1),
+              //list tile
               child: ListTile(
-                leading: Icon(Icons.person),
+                leading: list[index].getsender().getProfileImageURL() != "null"
+                    ? Container(
+                        width: 30,
+                        height: 30,
+                        child: DownLoadImage(
+                            list[index].getsender().getProfileImageURL()),
+                      )
+                    : Icon(Icons.person),
+                //senders name
                 title: Text(
-                  Chats.getchats()[index].getsender(),
-                  style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.black,
-                      fontWeight: FontWeight.w600),
-                ),
-                subtitle: Text(
-                  Chats.getchats()[index].getdate(),
+                  list[index].getsender().getname(),
                   style: TextStyle(
                       fontSize: 14,
-                      color: Colors.black,
+                      color: Colors.yellowAccent,
                       fontWeight: FontWeight.w400),
                 ),
-                // trailing: Icon(Icons.menu),
+
+                // msg
+                subtitle: Container(
+                  padding: EdgeInsets.only(top: 8),
+                  child: Text(
+                    list[index].getdata(),
+                    style: TextStyle(
+                        fontSize: 14,
+                        color: Colors.white,
+                        fontWeight: FontWeight.w400),
+                  ),
+                ),
+                trailing: (list[index].getsender().isAdmin()
+                    ? Icon(
+                        Icons.admin_panel_settings,
+                        color: Colors.red,
+                      )
+                    : list[index].getsender().isLecturer()
+                        ? Icon(
+                            Customicons.lecturer,
+                            color: Colors.white,
+                          )
+                        : Icon(
+                            Customicons.student,
+                            color: Colors.white,
+                          )),
                 onLongPress: () => {},
               ),
             ),
@@ -207,28 +205,5 @@ class _ChatwindowState extends State<Chatwindow> {
         ),
       ],
     );
-  }
-}
-
-class Chats {
-  String _sender;
-  dynamic _data;
-  static List<Chats> _chats = [];
-
-  Chats(
-    this._sender,
-    this._data,
-  ) {
-    Chats._chats.add(this);
-  }
-
-  String getsender() => this._sender;
-
-  dynamic getdate() => this._data;
-
-  static List<Chats> getchats() => Chats._chats;
-
-  static void clearchat() {
-    _chats.clear();
   }
 }

@@ -1,7 +1,12 @@
+import 'dart:ui';
+
 import 'package:flutter/material.dart';
+import 'package:hello_world/Classes/LatestNews.dart';
 import 'package:hello_world/Models/NewsCardModel.dart';
 import 'package:hello_world/Models/TitleWithMoreButton.dart';
-
+import 'package:hello_world/Protocol/Protocol.dart';
+import 'package:hello_world/Protocol/requests/reqFunctions.dart';
+import 'package:hello_world/res/Strings/EnvRes.dart';
 import '../BottomNav.dart';
 import '../NavDrawer.dart';
 
@@ -10,20 +15,77 @@ class DashBoard extends StatefulWidget {
   _DashBoardState createState() => _DashBoardState();
 }
 
-class _DashBoardState extends State<DashBoard> {
+class _DashBoardState extends State<DashBoard>
+    with SingleTickerProviderStateMixin {
+  GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey();
+  ScrollController _sc = ScrollController();
+  ScrollController eventlistController = ScrollController();
+  double headerH = 0;
+  late AnimationController ac;
+
+  bool headercollaps = false;
+  bool autoScroll = true;
+
+  void refresh() {
+    if (this.mounted) setState(() {});
+  }
+
+  @override
+  void initState() {
+    // TODO: implement initState
+    headerH = window.physicalSize.height * 0.13;
+    ac = AnimationController(
+      vsync: this,
+      duration: Duration(seconds: 1),
+    );
+
+    ac.forward();
+
+    Protocol.setDashBoardRefreshCallBack(refresh);
+    reqLatestNews();
+    _sc.addListener(() {
+      if (_sc.position.pixels > 0 && !headercollaps) {
+        setState(() {
+          headerH = 75;
+          headercollaps = true;
+        });
+      } else if (_sc.position.pixels == 0 && headercollaps) {
+        setState(() {
+          headerH = window.physicalSize.height * 0.13;
+          headercollaps = false;
+        });
+      }
+    });
+    super.initState();
+  }
+
+  @override
+  void dispose() {
+    _sc.dispose();
+    ac.dispose();
+    eventlistController.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      key: _scaffoldKey,
       appBar: AppBar(
         leading: Padding(
           padding: const EdgeInsets.all(8.0),
           child: Container(
             decoration:
                 BoxDecoration(shape: BoxShape.circle, color: Colors.grey),
-            child: Icon(Icons.person),
+            child: IconButton(
+              icon: Icon(Icons.person),
+              onPressed: () {
+                _scaffoldKey.currentState?.openDrawer();
+              },
+            ),
           ),
         ),
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: EnvRes.dashboardHeadColor,
         title: Text('DashBoard'),
         elevation: 20,
         actions: <Widget>[
@@ -34,27 +96,33 @@ class _DashBoardState extends State<DashBoard> {
         ],
       ),
       drawer: DrawerWidget(),
-      bottomNavigationBar: BottomNav(),
+      // bottomNavigationBar: BottomNav(),
       body: contain(),
     );
   }
 
   Widget contain() {
     Size size = MediaQuery.of(context).size;
-    TextEditingController DashSearchController = TextEditingController();
+    TextEditingController dashSearchController = TextEditingController();
 
     return Column(
       children: [
         //top part of the dash board
-        Container(
-          height: size.height * 0.2,
+        AnimatedContainer(
+          // height: size.height * 0.2,
+          height: headerH,
+          duration: Duration(milliseconds: 1500),
+          curve: Curves.easeInOut,
+
           child: Stack(
             children: [
-              Container(
+              AnimatedContainer(
+                duration: Duration(milliseconds: 1500),
+                curve: Curves.easeInOut,
                 width: size.width,
-                height: size.height * 0.2 - 20,
+                height: headerH - 25,
                 decoration: BoxDecoration(
-                  color: Colors.blueAccent,
+                  color: EnvRes.appBarColor,
                   borderRadius: BorderRadius.only(
                     bottomLeft: Radius.circular(30),
                     bottomRight: Radius.circular(30),
@@ -64,7 +132,7 @@ class _DashBoardState extends State<DashBoard> {
 
               //Search bar
               Positioned(
-                bottom: -0,
+                bottom: 0,
                 left: 0,
                 right: 0,
                 child: Container(
@@ -88,19 +156,24 @@ class _DashBoardState extends State<DashBoard> {
                             padding: const EdgeInsets.symmetric(
                                 horizontal: 30, vertical: 1),
                             child: TextField(
-                              controller: DashSearchController,
+                              controller: dashSearchController,
                               decoration: InputDecoration(
                                 hintText: 'Search',
                                 enabledBorder: InputBorder.none,
                                 focusedBorder: InputBorder.none,
                               ),
+                              onSubmitted: (value) {
+                                filter(value);
+                              },
                             ),
                           ),
                         ),
                       ),
                       Container(
                         child: IconButton(
-                            onPressed: () => {print(DashSearchController.text)},
+                            onPressed: () {
+                              filter(dashSearchController.text);
+                            },
                             icon: Icon(Icons.search)),
                       )
                     ],
@@ -111,63 +184,124 @@ class _DashBoardState extends State<DashBoard> {
             ],
           ),
         ),
+        Divider(
+          color: Colors.transparent,
+          height: 15,
+        ),
         //Events
         loadEvents(),
       ],
     );
   }
 
-  List<String> events = ['demo news 1', 'demo news 2', 'demo news 3'];
+  void filter(String value) {
+    print(value);
 
-  List<bool> iS = [false, false, false];
+    if (value == '') {
+      setState(() {
+        LatestNews.setFilter('');
+      });
+      return;
+    }
+
+    setState(() {
+      LatestNews.setFilter(value);
+    });
+  }
 
   //events loading
   //TODO: stream builder
   Widget loadEvents() {
     Size size = MediaQuery.of(context).size;
-    return SingleChildScrollView(
-      child: Column(
+    return Expanded(
+        child: RefreshIndicator(
+      onRefresh: pullrefresh,
+      child: ListView(
+        controller: _sc,
         children: [
-          TitleWithMoreButton('News', moreClick),
-          Container(
-            width: size.width,
-            // color: Colors.red,
-            child: SingleChildScrollView(
+          TitleWithMoreButton('Announcements', moreClick),
+          SingleChildScrollView(
+            child: AnimatedBuilder(
+              animation: ac,
+              builder: (context, child) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                          begin: Offset(0.8, 0.0), end: Offset.zero)
+                      .animate(
+                          CurvedAnimation(parent: ac, curve: Curves.easeInOut)),
+                  child: child,
+                );
+              },
               child: Container(
-                width: size.width * .5,
-                height: size.height * .4,
+                margin: EdgeInsets.only(left: ac.value),
+                height: 500,
                 child: ListView.builder(
+                  cacheExtent: 100,
                   scrollDirection: Axis.horizontal,
                   itemBuilder: eventcardbuilder,
-                  itemCount: events.length,
+                  itemCount: LatestNews.getfiltedEvents().length,
                 ),
               ),
             ),
-          )
+          ),
+          TitleWithMoreButton('field2', moreClick),
+          SingleChildScrollView(
+            child: AnimatedBuilder(
+              animation: ac,
+              builder: (context, child) {
+                return SlideTransition(
+                  position: Tween<Offset>(
+                          begin: Offset(0.8, 0.0), end: Offset.zero)
+                      .animate(
+                          CurvedAnimation(parent: ac, curve: Curves.easeInOut)),
+                  child: child,
+                );
+              },
+              child: Container(
+                margin: EdgeInsets.only(left: ac.value),
+                height: 500,
+                child: ListView.builder(
+                  cacheExtent: 100,
+                  scrollDirection: Axis.horizontal,
+                  itemBuilder: eventcardbuilder,
+                  itemCount: LatestNews.getfiltedEvents().length,
+                ),
+              ),
+            ),
+          ),
+          // TitleWithMoreButton('field3', moreClick),
+          // TitleWithMoreButton('field4', moreClick),
         ],
       ),
-    );
+    ));
   }
 
   Widget eventcardbuilder(BuildContext context, int index) {
-    String txt = """
-              What is Lorem Ipsum?
-          Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem Ipsum has been the industry's standard dummy text ever since the 1500s, when an unknown printer took a galley of type and scrambled it to make a type specimen book. It has survived not only five centuries, but also the leap into electronic typesetting, remaining essentially unchanged. It was popularised in the 1960s with the release of Letraset sheets containing Lorem Ipsum passages, and more recently with desktop publishing software like Aldus PageMaker including versions of Lorem Ipsum.
-          
-          Why do we use it?
-          It is a long established fact that a reader will be distracted by the readable content of a page when looking at its layout. The point of using Lorem Ipsum is that it has a more-or-less normal distribution of letters, as opposed to using 'Content here, content here', making it look like readable English. Many desktop publishing packages and web page editors now use Lorem Ipsum as their default model text, and a search for 'lorem ipsum' will uncover many web sites still in their infancy. Various versions have evolved over the years, sometimes by accident, sometimes on purpose (injected humour and the like).
-          
-          
-              """;
-
     return SizedBox(
-      height: MediaQuery.of(context).size.height * .4,
       width: MediaQuery.of(context).size.width * .5,
-      child: NewsCardModel(events[index], txt.substring(0, 100), iS[index]),
+      child: NewsCardModel(LatestNews.getfiltedEvents(), index),
     );
   }
 
   moreClick() {
     print('this is more button');
+  }
+
+  Future<void> pullrefresh() async {
+    setState(() {
+      reqLatestNews();
+    });
+  }
+
+  void enddrag(DragEndDetails details) {
+    autoScroll = false;
+  }
+
+  void ondrag(DragStartDetails details) {
+    autoScroll = true;
+  }
+
+  void updateDrag(DragUpdateDetails details) {
+    autoScroll = false;
   }
 }

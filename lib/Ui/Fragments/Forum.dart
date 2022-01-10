@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:hello_world/res/Strings/EnvRes.dart';
 import '../NavDrawer.dart';
-import 'ChatModel.dart';
 
 class Chat extends StatefulWidget {
   @override
@@ -12,18 +12,34 @@ class _ChatState extends State<Chat> {
 
   List groups = ["Group1", "Group2", "Group3", "Group4"];
 
+  int onlineCount = 0;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       key: _scaffoldKey,
       appBar: AppBar(
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: EnvRes.appBarColor,
         leading: IconButton(
             onPressed: () {
               _scaffoldKey.currentState?.openDrawer();
             },
             icon: Icon(Icons.menu)),
-        title: Text('Chat'),
+        title: ListTile(
+          title: Text(
+            'Public Chat',
+            style: TextStyle(
+              color: Colors.white,
+              fontWeight: FontWeight.w700,
+            ),
+          ),
+          subtitle: Text(
+            'Online ${this.onlineCount}',
+            style: TextStyle(
+              color: Colors.white,
+            ),
+          ),
+        ),
         elevation: 20,
         actions: [
           PopupMenuButton(
@@ -99,10 +115,7 @@ class _ChatState extends State<Chat> {
             ),
             trailing: Icon(Icons.menu),
             onLongPress: () => {print('hellow')},
-            onTap: () => {
-              Navigator.push(
-                  context, MaterialPageRoute(builder: (context) => ChatModel()))
-            },
+            onTap: () => {},
           ),
         ),
       ),
