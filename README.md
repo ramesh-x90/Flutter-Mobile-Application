@@ -1,6 +1,6 @@
 # LIGHT_RAIN
 
-A new Flutter project to conduct functionalities in IT faculty in SLTC.
+A new Flutter project to conduct functionalities in IT faculty of SLTC.
 
 ## Getting Started
 
